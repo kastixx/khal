@@ -32,7 +32,7 @@ import os
 import os.path
 
 from . import backend
-from .event import Event
+from .event import Event, EventStandIn
 from .exceptions import (CouldNotCreateDbDir, DuplicateUid,
                          ReadOnlyCalendarError, UnsupportedFeatureError,
                          UpdateFailed)
@@ -94,8 +94,7 @@ class CalendarCollection(object):
         self.color = color
         self.highlight_event_days = highlight_event_days
         self._locale = locale
-        self._backend = backend.SQLiteDb(
-            calendars=self.names, db_path=dbpath, locale=self._locale)
+        self._backend = backend.SQLiteDb(self.names, dbpath, self._locale)
         self._last_ctags = dict()
         self.update_db()
 
@@ -133,19 +132,17 @@ class CalendarCollection(object):
     def _local_ctag(self, calendar):
         return get_etag_from_file(self._calendars[calendar]['path'])
 
-    def _cover_event(self, event):
-        event.color = self._calendars[event.calendar]['color']
-        event.readonly = self._calendars[event.calendar]['readonly']
-        event.unicode_symbols = self._locale['unicode_symbols']
-        return event
-
     def get_floating(self, start, end, minimal=False):
-        events = self._backend.get_floating(start, end, minimal)
-        return (self._cover_event(event) for event in events)
+        if minimal is True:
+            return list()
+        for args in self._backend.get_floating(start, end, minimal):
+            yield self._construct_event(*args)
 
     def get_localized(self, start, end, minimal=False):
-        events = self._backend.get_localized(start, end, minimal)
-        return (self._cover_event(event) for event in events)
+        if minimal is True:
+            return list()
+        for args in self._backend.get_localized(start, end, minimal):
+            yield self._construct_event(*args)
 
     def get_events_on(self, day, minimal=False):
         """return all events on `day`
@@ -216,8 +213,35 @@ class CalendarCollection(object):
         self._storages[calendar].delete(href, etag)
         self._backend.delete(href, calendar=calendar)
 
-    def get_event(self, href, calendar):
-        return self._cover_event(self._backend.get(href, calendar=calendar))
+    def get_event(self, href: str, calendar: str) -> Event:
+        return self._construct_event(
+            self._backend.get(href, calendar),
+            href,
+            calendar=calendar,
+        )
+
+    def _construct_event(self,
+                         item: str,
+                         href: str,
+                         start: dt.datetime = None,
+                         end: dt.datetime = None,
+                         ref: str='PROTO',
+                         etag: str=None,
+                         calendar: str=None,
+                         ) -> Event:
+        event = Event.fromString(
+            item,
+            locale=self._locale,
+            href=href,
+            calendar=calendar,
+            etag=etag,
+            start=start,
+            end=end,
+            ref=ref,
+            color=self._calendars[event.calendar]['color'],
+            readonly=self._calendars[event.calendar]['readonly'],
+        )
+        return event
 
     def change_collection(self, event, new_collection):
         href, etag, calendar = event.href, event.etag, event.calendar
@@ -291,17 +315,16 @@ class CalendarCollection(object):
             self._backend.set_ctag(local_ctag, calendar=calendar)
             self._last_ctags[calendar] = local_ctag
 
-    def _update_vevent(self, href, calendar):
+    def _update_vevent(self, href: str, calendar: str) -> bool:
         """should only be called during db_update, only updates the db,
         does not check for readonly"""
-        event, etag = self._storages[calendar].get(href)
+        event = self.get_event(href=href, calendar=calendar)
         try:
             if self._calendars[calendar].get('ctype') == 'birthdays':
                 update = self._backend.update_birthday
             else:
                 update = self._backend.update
-            update(event.raw, href=href, etag=etag, calendar=calendar)
-
+            update(event.raw, href=href, etag=event.etag, calendar=calendar)
             return True
         except Exception as e:
             if not isinstance(e, (UpdateFailed, UnsupportedFeatureError)):
@@ -313,10 +336,11 @@ class CalendarCollection(object):
 
     def search(self, search_string):
         """search for the db for events matching `search_string`"""
-        return (self._cover_event(event) for event in self._backend.search(search_string))
+        return (self._construct_event(item, etag) for item, etag in self._backend.search(search_string))
 
     def get_day_styles(self, day, focus):
-        devents = list(self.get_events_on(day, minimal=True))
+#        devents = list(self.get_events_on(day, minimal=True))
+        devents = list()
         if len(devents) == 0:
             return None
         if self.color != '':

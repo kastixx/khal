@@ -1,5 +1,6 @@
 
 import datetime as dt
+from operator import itemgetter
 
 import icalendar
 import pkg_resources
@@ -35,15 +36,16 @@ def test_event_rrule_recurrence_id():
         BERLIN.localize(dt.datetime(2014, 6, 30, 0, 0)),
         BERLIN.localize(dt.datetime(2014, 8, 26, 0, 0)),
     )
-    events = sorted(events, key=lambda x: x.start)
+    events = sorted(events, key=itemgetter(2))
     assert len(events) == 6
 
-    assert events[0].start == BERLIN.localize(dt.datetime(2014, 6, 30, 7, 0))
-    assert events[1].start == BERLIN.localize(dt.datetime(2014, 7, 7, 9, 0))
-    assert events[2].start == BERLIN.localize(dt.datetime(2014, 7, 14, 7, 0))
-    assert events[3].start == BERLIN.localize(dt.datetime(2014, 7, 21, 7, 0))
-    assert events[4].start == BERLIN.localize(dt.datetime(2014, 7, 28, 7, 0))
-    assert events[5].start == BERLIN.localize(dt.datetime(2014, 8, 4, 7, 0))
+    # start
+    assert events[0][2] == BERLIN.localize(dt.datetime(2014, 6, 30, 7, 0))
+    assert events[1][2] == BERLIN.localize(dt.datetime(2014, 7, 7, 9, 0))
+    assert events[2][2] == BERLIN.localize(dt.datetime(2014, 7, 14, 7, 0))
+    assert events[3][2] == BERLIN.localize(dt.datetime(2014, 7, 21, 7, 0))
+    assert events[4][2] == BERLIN.localize(dt.datetime(2014, 7, 28, 7, 0))
+    assert events[5][2] == BERLIN.localize(dt.datetime(2014, 8, 4, 7, 0))
 
     events = dbi.get_localized(
         BERLIN.localize(dt.datetime(2014, 6, 30, 0, 0)),
@@ -52,11 +54,11 @@ def test_event_rrule_recurrence_id():
     )
     events = list(events)
     assert len(events) == 6
-    for event in events:
-        assert isinstance(event, EventStandIn)
 
 
+@pytest.mark.skip
 def test_event_different_timezones():
+    # TODO move this test over to khalendar_test
     dbi = backend.SQLiteDb([calname], ':memory:', locale=LOCALE_BERLIN)
     dbi.update(_get_text('event_dt_london'), href='12345.ics', etag='abcd', calendar=calname)
 
@@ -108,17 +110,18 @@ def test_event_rrule_recurrence_id_invalid_tzid():
     dbi = backend.SQLiteDb([calname], ':memory:', locale=LOCALE_BERLIN)
     dbi.update(_get_text('event_rrule_recuid_invalid_tzid'), href='12345.ics', etag='abcd',
                calendar=calname)
-    events = dbi.get_localized(BERLIN.localize(dt.datetime(2014, 4, 30, 0, 0)),
-                               BERLIN.localize(dt.datetime(2014, 9, 26, 0, 0)))
-    events = sorted(events)
+    events = dbi.get_localized(
+        BERLIN.localize(dt.datetime(2014, 4, 30, 0, 0)),
+        BERLIN.localize(dt.datetime(2014, 9, 26, 0, 0)))
+    events = sorted(events, key=itemgetter(2))
     assert len(events) == 6
 
-    assert events[0].start == BERLIN.localize(dt.datetime(2014, 6, 30, 7, 0))
-    assert events[1].start == BERLIN.localize(dt.datetime(2014, 7, 7, 9, 0))
-    assert events[2].start == BERLIN.localize(dt.datetime(2014, 7, 14, 7, 0))
-    assert events[3].start == BERLIN.localize(dt.datetime(2014, 7, 21, 7, 0))
-    assert events[4].start == BERLIN.localize(dt.datetime(2014, 7, 28, 7, 0))
-    assert events[5].start == BERLIN.localize(dt.datetime(2014, 8, 4, 7, 0))
+    assert events[0][2] == BERLIN.localize(dt.datetime(2014, 6, 30, 7, 0))
+    assert events[1][2] == BERLIN.localize(dt.datetime(2014, 7, 7, 9, 0))
+    assert events[2][2] == BERLIN.localize(dt.datetime(2014, 7, 14, 7, 0))
+    assert events[3][2] == BERLIN.localize(dt.datetime(2014, 7, 21, 7, 0))
+    assert events[4][2] == BERLIN.localize(dt.datetime(2014, 7, 28, 7, 0))
+    assert events[5][2] == BERLIN.localize(dt.datetime(2014, 8, 4, 7, 0))
 
 
 event_rrule_recurrence_id_reverse = """
@@ -147,22 +150,24 @@ def test_event_rrule_recurrence_id_reverse():
     """
     dbi = backend.SQLiteDb([calname], ':memory:', locale=LOCALE_BERLIN)
     assert dbi.list(calname) == list()
-    events = dbi.get_localized(BERLIN.localize(dt.datetime(2014, 6, 30, 0, 0)),
-                               BERLIN.localize(dt.datetime(2014, 8, 26, 0, 0)))
+    events = dbi.get_localized(
+        BERLIN.localize(dt.datetime(2014, 6, 30, 0, 0)),
+        BERLIN.localize(dt.datetime(2014, 8, 26, 0, 0)))
     assert list(events) == list()
     dbi.update(event_rrule_recurrence_id_reverse, href='12345.ics', etag='abcd', calendar=calname)
     assert dbi.list(calname) == [('12345.ics', 'abcd')]
-    events = dbi.get_localized(BERLIN.localize(dt.datetime(2014, 6, 30, 0, 0)),
-                               BERLIN.localize(dt.datetime(2014, 8, 26, 0, 0)))
-    events = sorted(events, key=lambda x: x.start)
+    events = dbi.get_localized(
+        BERLIN.localize(dt.datetime(2014, 6, 30, 0, 0)),
+        BERLIN.localize(dt.datetime(2014, 8, 26, 0, 0)))
+    events = sorted(events, key=itemgetter(2))
     assert len(events) == 6
 
-    assert events[0].start == BERLIN.localize(dt.datetime(2014, 6, 30, 7, 0))
-    assert events[1].start == BERLIN.localize(dt.datetime(2014, 7, 7, 9, 0))
-    assert events[2].start == BERLIN.localize(dt.datetime(2014, 7, 14, 7, 0))
-    assert events[3].start == BERLIN.localize(dt.datetime(2014, 7, 21, 7, 0))
-    assert events[4].start == BERLIN.localize(dt.datetime(2014, 7, 28, 7, 0))
-    assert events[5].start == BERLIN.localize(dt.datetime(2014, 8, 4, 7, 0))
+    assert events[0][2] == BERLIN.localize(dt.datetime(2014, 6, 30, 7, 0))
+    assert events[1][2] == BERLIN.localize(dt.datetime(2014, 7, 7, 9, 0))
+    assert events[2][2] == BERLIN.localize(dt.datetime(2014, 7, 14, 7, 0))
+    assert events[3][2] == BERLIN.localize(dt.datetime(2014, 7, 21, 7, 0))
+    assert events[4][2] == BERLIN.localize(dt.datetime(2014, 7, 28, 7, 0))
+    assert events[5][2] == BERLIN.localize(dt.datetime(2014, 8, 4, 7, 0))
 
 
 def test_event_rrule_recurrence_id_update_with_exclude():
@@ -176,13 +181,13 @@ def test_event_rrule_recurrence_id_update_with_exclude():
                href='12345.ics', etag='abcd', calendar=calname)
     events = dbi.get_localized(BERLIN.localize(dt.datetime(2014, 4, 30, 0, 0)),
                                BERLIN.localize(dt.datetime(2014, 9, 26, 0, 0)))
-    events = sorted(events, key=lambda x: x.start)
+    events = sorted(events, key=itemgetter(2))
     assert len(events) == 5
-    assert events[0].start == BERLIN.localize(dt.datetime(2014, 6, 30, 7, 0))
-    assert events[1].start == BERLIN.localize(dt.datetime(2014, 7, 7, 7, 0))
-    assert events[2].start == BERLIN.localize(dt.datetime(2014, 7, 21, 7, 0))
-    assert events[3].start == BERLIN.localize(dt.datetime(2014, 7, 28, 7, 0))
-    assert events[4].start == BERLIN.localize(dt.datetime(2014, 8, 4, 7, 0))
+    assert events[0][2] == BERLIN.localize(dt.datetime(2014, 6, 30, 7, 0))
+    assert events[1][2] == BERLIN.localize(dt.datetime(2014, 7, 7, 7, 0))
+    assert events[2][2] == BERLIN.localize(dt.datetime(2014, 7, 21, 7, 0))
+    assert events[3][2] == BERLIN.localize(dt.datetime(2014, 7, 28, 7, 0))
+    assert events[4][2] == BERLIN.localize(dt.datetime(2014, 8, 4, 7, 0))
 
 
 def test_event_recuid_no_master():
@@ -196,13 +201,11 @@ def test_event_recuid_no_master():
     events = dbi.get_floating(
         dt.datetime(2017, 3, 1, 0, 0), dt.datetime(2017, 4, 1, 0, 0),
     )
-    events = sorted(events, key=lambda x: x.start)
+    events = sorted(events, key=itemgetter(2))
     assert len(events) == 1
-    assert events[0].start == dt.datetime(2017, 3, 29, 16)
-    assert events[0].end == dt.datetime(2017, 3, 29, 16, 25)
-    assert events[0].format(
-        '{title}', relative_to=dt.date(2017, 3, 29)
-    ) == 'Infrastructure Planning\x1b[0m'
+    assert events[0][2] == dt.datetime(2017, 3, 29, 16)
+    assert events[0][3] == dt.datetime(2017, 3, 29, 16, 25)
+    assert 'SUMMARY:Infrastructure Planning' in events[0][0]
 
 
 def test_event_recuid_rrule_no_master():
@@ -218,14 +221,13 @@ def test_event_recuid_rrule_no_master():
     events = dbi.get_floating(
         dt.datetime(2010, 1, 1, 0, 0), dt.datetime(2020, 1, 1, 0, 0),
     )
-    events = sorted(events, key=lambda x: x.start)
+    events = sorted(events, key=itemgetter(2))
     assert len(list(events)) == 2
-    assert events[0].start == dt.datetime(2014, 6, 30, 7, 30)
-    assert events[0].end == dt.datetime(2014, 6, 30, 12, 0)
-    assert events[1].start == dt.datetime(2014, 7, 7, 8, 30)
-    assert events[1].end == dt.datetime(2014, 7, 7, 12, 0)
+    assert events[0][2] == dt.datetime(2014, 6, 30, 7, 30)
+    assert events[0][3] == dt.datetime(2014, 6, 30, 12, 0)
+    assert events[1][2] == dt.datetime(2014, 7, 7, 8, 30)
+    assert events[1][3] == dt.datetime(2014, 7, 7, 12, 0)
     events = dbi.search('VEVENT')
-    events = sorted(events, key=lambda x: x.start)
     assert len(list(events)) == 2
 
 
@@ -238,10 +240,8 @@ def test_no_valid_timezone():
     events = sorted(list(events))
     assert len(events) == 1
     event = events[0]
-    assert event.start == BERLIN.localize(dt.datetime(2014, 4, 9, 9, 30))
-    assert event.end == BERLIN.localize(dt.datetime(2014, 4, 9, 10, 30))
-    assert event.start_local == BERLIN.localize(dt.datetime(2014, 4, 9, 9, 30))
-    assert event.end_local == BERLIN.localize(dt.datetime(2014, 4, 9, 10, 30))
+    assert event[2] == BERLIN.localize(dt.datetime(2014, 4, 9, 9, 30))
+    assert event[3] == BERLIN.localize(dt.datetime(2014, 4, 9, 10, 30))
 
 
 def test_event_delete():
@@ -317,27 +317,26 @@ def test_event_rrule_this_and_future():
     assert dbi.list(calname) == [('12345.ics', 'abcd')]
     events = dbi.get_localized(BERLIN.localize(dt.datetime(2014, 4, 30, 0, 0)),
                                BERLIN.localize(dt.datetime(2014, 9, 26, 0, 0)))
-    events = sorted(events, key=lambda x: x.start)
+    events = sorted(events, key=itemgetter(2))
     assert len(events) == 6
 
-    assert events[0].start == BERLIN.localize(dt.datetime(2014, 6, 30, 7, 0))
-    assert events[1].start == BERLIN.localize(dt.datetime(2014, 7, 7, 9, 0))
-    assert events[2].start == BERLIN.localize(dt.datetime(2014, 7, 14, 9, 0))
-    assert events[3].start == BERLIN.localize(dt.datetime(2014, 7, 21, 9, 0))
-    assert events[4].start == BERLIN.localize(dt.datetime(2014, 7, 28, 9, 0))
-    assert events[5].start == BERLIN.localize(dt.datetime(2014, 8, 4, 9, 0))
+    assert events[0][2] == BERLIN.localize(dt.datetime(2014, 6, 30, 7, 0))
+    assert events[1][2] == BERLIN.localize(dt.datetime(2014, 7, 7, 9, 0))
+    assert events[2][2] == BERLIN.localize(dt.datetime(2014, 7, 14, 9, 0))
+    assert events[3][2] == BERLIN.localize(dt.datetime(2014, 7, 21, 9, 0))
+    assert events[4][2] == BERLIN.localize(dt.datetime(2014, 7, 28, 9, 0))
+    assert events[5][2] == BERLIN.localize(dt.datetime(2014, 8, 4, 9, 0))
 
-    assert events[0].end == BERLIN.localize(dt.datetime(2014, 6, 30, 12, 0))
-    assert events[1].end == BERLIN.localize(dt.datetime(2014, 7, 7, 18, 0))
-    assert events[2].end == BERLIN.localize(dt.datetime(2014, 7, 14, 18, 0))
-    assert events[3].end == BERLIN.localize(dt.datetime(2014, 7, 21, 18, 0))
-    assert events[4].end == BERLIN.localize(dt.datetime(2014, 7, 28, 18, 0))
-    assert events[5].end == BERLIN.localize(dt.datetime(2014, 8, 4, 18, 0))
+    assert events[0][3] == BERLIN.localize(dt.datetime(2014, 6, 30, 12, 0))
+    assert events[1][3] == BERLIN.localize(dt.datetime(2014, 7, 7, 18, 0))
+    assert events[2][3] == BERLIN.localize(dt.datetime(2014, 7, 14, 18, 0))
+    assert events[3][3] == BERLIN.localize(dt.datetime(2014, 7, 21, 18, 0))
+    assert events[4][3] == BERLIN.localize(dt.datetime(2014, 7, 28, 18, 0))
+    assert events[5][3] == BERLIN.localize(dt.datetime(2014, 8, 4, 18, 0))
 
-    assert str(events[0].summary) == 'Arbeit'
+    assert 'SUMMARY:Arbeit\n' in events[0][0]
     for num, event in enumerate(events[1:]):
-        assert event.raw  # just making sure we don't raise any exception
-        assert str(event.summary) == 'Arbeit (lang)'
+        assert 'SUMMARY:Arbeit (lang)\n' in event[0]
 
 
 event_rrule_this_and_future_multi_day_shift = \
@@ -351,26 +350,26 @@ def test_event_rrule_this_and_future_multi_day_shift():
     assert dbi.list(calname) == [('12345.ics', 'abcd')]
     events = dbi.get_localized(BERLIN.localize(dt.datetime(2014, 4, 30, 0, 0)),
                                BERLIN.localize(dt.datetime(2014, 9, 26, 0, 0)))
-    events = sorted(events, key=lambda x: x.start)
+    events = sorted(events, key=itemgetter(2))
     assert len(events) == 6
 
-    assert events[0].start == BERLIN.localize(dt.datetime(2014, 6, 30, 7, 0))
-    assert events[1].start == BERLIN.localize(dt.datetime(2014, 7, 8, 9, 0))
-    assert events[2].start == BERLIN.localize(dt.datetime(2014, 7, 15, 9, 0))
-    assert events[3].start == BERLIN.localize(dt.datetime(2014, 7, 22, 9, 0))
-    assert events[4].start == BERLIN.localize(dt.datetime(2014, 7, 29, 9, 0))
-    assert events[5].start == BERLIN.localize(dt.datetime(2014, 8, 5, 9, 0))
+    assert events[0][2] == BERLIN.localize(dt.datetime(2014, 6, 30, 7, 0))
+    assert events[1][2] == BERLIN.localize(dt.datetime(2014, 7, 8, 9, 0))
+    assert events[2][2] == BERLIN.localize(dt.datetime(2014, 7, 15, 9, 0))
+    assert events[3][2] == BERLIN.localize(dt.datetime(2014, 7, 22, 9, 0))
+    assert events[4][2] == BERLIN.localize(dt.datetime(2014, 7, 29, 9, 0))
+    assert events[5][2] == BERLIN.localize(dt.datetime(2014, 8, 5, 9, 0))
 
-    assert events[0].end == BERLIN.localize(dt.datetime(2014, 6, 30, 12, 0))
-    assert events[1].end == BERLIN.localize(dt.datetime(2014, 7, 9, 15, 0))
-    assert events[2].end == BERLIN.localize(dt.datetime(2014, 7, 16, 15, 0))
-    assert events[3].end == BERLIN.localize(dt.datetime(2014, 7, 23, 15, 0))
-    assert events[4].end == BERLIN.localize(dt.datetime(2014, 7, 30, 15, 0))
-    assert events[5].end == BERLIN.localize(dt.datetime(2014, 8, 6, 15, 0))
+    assert events[0][3] == BERLIN.localize(dt.datetime(2014, 6, 30, 12, 0))
+    assert events[1][3] == BERLIN.localize(dt.datetime(2014, 7, 9, 15, 0))
+    assert events[2][3] == BERLIN.localize(dt.datetime(2014, 7, 16, 15, 0))
+    assert events[3][3] == BERLIN.localize(dt.datetime(2014, 7, 23, 15, 0))
+    assert events[4][3] == BERLIN.localize(dt.datetime(2014, 7, 30, 15, 0))
+    assert events[5][3] == BERLIN.localize(dt.datetime(2014, 8, 6, 15, 0))
 
-    assert str(events[0].summary) == 'Arbeit'
+    assert 'SUMMARY:Arbeit\n' in events[0][0]
     for event in events[1:]:
-        assert str(event.summary) == 'Arbeit (lang)'
+        assert 'SUMMARY:Arbeit (lang)\n' in event[0]
 
 
 event_rrule_this_and_future_allday_temp = """
@@ -404,32 +403,23 @@ def test_event_rrule_this_and_future_allday():
     events = list(dbi.get_floating(dt.datetime(2014, 4, 30, 0, 0), dt.datetime(2014, 9, 27, 0, 0)))
     assert len(events) == 6
 
-    assert events[0].start == dt.date(2014, 6, 30)
-    assert events[1].start == dt.date(2014, 7, 8)
-    assert events[2].start == dt.date(2014, 7, 15)
-    assert events[3].start == dt.date(2014, 7, 22)
-    assert events[4].start == dt.date(2014, 7, 29)
-    assert events[5].start == dt.date(2014, 8, 5)
+    assert events[0][2] == dt.date(2014, 6, 30)
+    assert events[1][2] == dt.date(2014, 7, 8)
+    assert events[2][2] == dt.date(2014, 7, 15)
+    assert events[3][2] == dt.date(2014, 7, 22)
+    assert events[4][2] == dt.date(2014, 7, 29)
+    assert events[5][2] == dt.date(2014, 8, 5)
 
-    assert events[0].end == dt.date(2014, 6, 30)
-    assert events[1].end == dt.date(2014, 7, 8)
-    assert events[2].end == dt.date(2014, 7, 15)
-    assert events[3].end == dt.date(2014, 7, 22)
-    assert events[4].end == dt.date(2014, 7, 29)
-    assert events[5].end == dt.date(2014, 8, 5)
+    assert events[0][3] == dt.date(2014, 7, 1)
+    assert events[1][3] == dt.date(2014, 7, 9)
+    assert events[2][3] == dt.date(2014, 7, 16)
+    assert events[3][3] == dt.date(2014, 7, 23)
+    assert events[4][3] == dt.date(2014, 7, 30)
+    assert events[5][3] == dt.date(2014, 8, 6)
 
-    assert str(events[0].summary) == 'Arbeit'
+    assert 'SUMMARY:Arbeit\n' in events[0][0]
     for event in events[1:]:
-        assert str(event.summary) == 'Arbeit (lang)'
-
-    events = list(dbi.get_floating(
-        dt.datetime(2014, 4, 30, 0, 0),
-        dt.datetime(2014, 9, 27, 0, 0),
-        minimal=True,
-    ))
-    assert len(events) == 6
-    for event in events:
-        assert isinstance(event, EventStandIn)
+        assert 'SUMMARY:Arbeit (lang)\n' in event[0]
 
 
 def test_event_rrule_this_and_future_allday_prior():
@@ -443,23 +433,23 @@ def test_event_rrule_this_and_future_allday_prior():
 
     assert len(events) == 6
 
-    assert events[0].start == dt.date(2014, 6, 30)
-    assert events[1].start == dt.date(2014, 7, 5)
-    assert events[2].start == dt.date(2014, 7, 12)
-    assert events[3].start == dt.date(2014, 7, 19)
-    assert events[4].start == dt.date(2014, 7, 26)
-    assert events[5].start == dt.date(2014, 8, 2)
+    assert events[0][2] == dt.date(2014, 6, 30)
+    assert events[1][2] == dt.date(2014, 7, 5)
+    assert events[2][2] == dt.date(2014, 7, 12)
+    assert events[3][2] == dt.date(2014, 7, 19)
+    assert events[4][2] == dt.date(2014, 7, 26)
+    assert events[5][2] == dt.date(2014, 8, 2)
 
-    assert events[0].end == dt.date(2014, 6, 30)
-    assert events[1].end == dt.date(2014, 7, 5)
-    assert events[2].end == dt.date(2014, 7, 12)
-    assert events[3].end == dt.date(2014, 7, 19)
-    assert events[4].end == dt.date(2014, 7, 26)
-    assert events[5].end == dt.date(2014, 8, 2)
+    assert events[0][3] == dt.date(2014, 7, 1)
+    assert events[1][3] == dt.date(2014, 7, 6)
+    assert events[2][3] == dt.date(2014, 7, 13)
+    assert events[3][3] == dt.date(2014, 7, 20)
+    assert events[4][3] == dt.date(2014, 7, 27)
+    assert events[5][3] == dt.date(2014, 8, 3)
 
-    assert str(events[0].summary) == 'Arbeit'
+    assert 'SUMMARY:Arbeit\n' in events[0][0]
     for event in events[1:]:
-        assert str(event.summary) == 'Arbeit (lang)'
+        assert 'SUMMARY:Arbeit (lang)\n' in event[0]
 
 
 event_rrule_multi_this_and_future_allday = """BEGIN:VCALENDAR
@@ -497,25 +487,25 @@ def test_event_rrule_multi_this_and_future_allday():
     )
     assert len(events) == 6
 
-    assert events[0].start == dt.date(2014, 6, 30)
-    assert events[1].start == dt.date(2014, 7, 12)
-    assert events[2].start == dt.date(2014, 7, 17)
-    assert events[3].start == dt.date(2014, 7, 19)
-    assert events[4].start == dt.date(2014, 7, 24)
-    assert events[5].start == dt.date(2014, 7, 31)
+    assert events[0][2] == dt.date(2014, 6, 30)
+    assert events[1][2] == dt.date(2014, 7, 12)
+    assert events[2][2] == dt.date(2014, 7, 17)
+    assert events[3][2] == dt.date(2014, 7, 19)
+    assert events[4][2] == dt.date(2014, 7, 24)
+    assert events[5][2] == dt.date(2014, 7, 31)
 
-    assert events[0].end == dt.date(2014, 6, 30)
-    assert events[1].end == dt.date(2014, 7, 13)
-    assert events[2].end == dt.date(2014, 7, 17)
-    assert events[3].end == dt.date(2014, 7, 20)
-    assert events[4].end == dt.date(2014, 7, 24)
-    assert events[5].end == dt.date(2014, 7, 31)
+    assert events[0][3] == dt.date(2014, 7, 1)
+    assert events[1][3] == dt.date(2014, 7, 14)
+    assert events[2][3] == dt.date(2014, 7, 18)
+    assert events[3][3] == dt.date(2014, 7, 21)
+    assert events[4][3] == dt.date(2014, 7, 25)
+    assert events[5][3] == dt.date(2014, 8, 1)
 
-    assert str(events[0].summary) == 'Arbeit'
+    assert 'SUMMARY:Arbeit\n' in events[0][0]
     for event in [events[1], events[3]]:
-        assert str(event.summary) == 'Arbeit (lang)'
+        assert 'SUMMARY:Arbeit (lang)\n' in event[0]
     for event in [events[2], events[4], events[5]]:
-        assert str(event.summary) == 'Arbeit (neu)'
+        assert 'SUMMARY:Arbeit (neu)\n' in event[0]
 
 
 master = """BEGIN:VEVENT
@@ -591,8 +581,9 @@ def test_two_calendars_same_uid():
     events_c = list(dbi.get_localized(BERLIN.localize(dt.datetime(2014, 6, 30, 0, 0)),
                                       BERLIN.localize(dt.datetime(2014, 7, 26, 0, 0))))
     assert len(events_c) == 8
-    assert [event.calendar for event in events_c].count(home) == 4
-    assert [event.calendar for event in events_c].count(work) == 4
+    # count events from a given calendar
+    assert [event[6] for event in events_c].count(home) == 4
+    assert [event[6] for event in events_c].count(work) == 4
 
     dbi.delete('12345.ics', calendar=home)
     dbi.calendars = [home]
@@ -606,8 +597,8 @@ def test_two_calendars_same_uid():
     dbi.calendars = [work, home]
     events_c = list(dbi.get_localized(BERLIN.localize(dt.datetime(2014, 6, 30, 0, 0)),
                                       BERLIN.localize(dt.datetime(2014, 7, 26, 0, 0))))
-    assert [event.calendar for event in events_c].count('home') == 0
-    assert [event.calendar for event in events_c].count('work') == 4
+    assert [event[6] for event in events_c].count('home') == 0
+    assert [event[6] for event in events_c].count('work') == 4
     assert dbi.list(home) == []
     assert dbi.list(work) == [('12345.ics', 'abcd')]
 
@@ -622,9 +613,10 @@ def test_update_one_should_not_affect_others():
     events = list(db.get_floating(dt.datetime(2015, 4, 9, 0, 0), dt.datetime(2015, 4, 10, 0, 0)))
     assert len(events) == 1
 
-
+@pytest.mark.skip
 def test_zulu_events():
     """test if events in Zulu time are correctly recognized as locaized events"""
+    # TODO move to khalendar_test
     db = backend.SQLiteDb([calname], ':memory:', locale=LOCALE_BERLIN)
     db.update(_get_text('event_dt_simple_zulu'), href='event_zulu', calendar=calname)
     events = db.get_localized(BERLIN.localize(dt.datetime(2014, 4, 9, 0, 0)),
@@ -643,8 +635,8 @@ def test_no_dtend():
     events = db.get_floating(
         dt.datetime(2016, 1, 16, 0, 0), dt.datetime(2016, 1, 17, 0, 0))
     event = list(events)[0]
-    assert event.start == dt.date(2016, 1, 16)
-    assert event.end == dt.date(2016, 1, 16)
+    assert event[2] == dt.date(2016, 1, 16)
+    assert event[3] == dt.date(2016, 1, 17)
 
 
 event_rdate_period = """BEGIN:VEVENT
@@ -741,10 +733,13 @@ def test_birthdays():
     db.update_birthday(card, 'unix.vcf', calendar=calname)
     events = list(db.get_floating(start, end))
     assert len(events) == 1
-    assert events[0].summary == 'Unix\'s 0th birthday'
-    events = list(db.get_floating(dt.datetime(2016, 3, 11, 0, 0),
-                                  dt.datetime(2016, 3, 11, 23, 59, 59, 999)))
-    assert events[0].summary == 'Unix\'s 45th birthday'
+    assert 'SUMMARY: Unix\'s birthday' in events[0][0]
+
+    events = list(
+        db.get_floating(
+            dt.datetime(2016, 3, 11, 0, 0),
+            dt.datetime(2016, 3, 11, 23, 59, 59, 999)))
+    assert 'SUMMARY: Unix\'s birthday' in events[0][0]
 
 
 def test_birthdays_update():
@@ -754,6 +749,7 @@ def test_birthdays_update():
     db.update_birthday(card, 'unix.vcf', calendar=calname)
 
 
+@pytest.mark.skip('move to khalendar_test')
 def test_birthdays_29feb():
     """test how we deal with birthdays on 29th of feb in leap years"""
     db = backend.SQLiteDb([calname], ':memory:', locale=LOCALE_BERLIN)
@@ -763,13 +759,13 @@ def test_birthdays_29feb():
     )
     assert len(events) == 1
     assert events[0].summary == 'leapyear\'s 4th birthday (29th of Feb.)'
-    assert events[0].start == dt.date(2004, 2, 29)
+    assert events[0][2] == dt.date(2004, 2, 29)
     events = list(
         db.get_floating(dt.datetime(2005, 1, 1, 0, 0), dt.datetime(2005, 12, 31))
     )
     assert len(events) == 1
     assert events[0].summary == 'leapyear\'s 5th birthday (29th of Feb.)'
-    assert events[0].start == dt.date(2005, 3, 1)
+    assert events[0][2] == dt.date(2005, 3, 1)
 
 
 def test_birthdays_no_year():
@@ -778,7 +774,7 @@ def test_birthdays_no_year():
     db.update_birthday(card_no_year, 'unix.vcf', calendar=calname)
     events = list(db.get_floating(start, end))
     assert len(events) == 1
-    assert events[0].summary == 'Unix\'s birthday'
+    assert 'SUMMARY:Unix\'s birthday' in events[0][0]
 
 
 def test_birthdays_no_fn():
@@ -789,7 +785,7 @@ def test_birthdays_no_fn():
     events = list(db.get_floating(dt.datetime(1941, 9, 9, 0, 0),
                                   dt.datetime(1941, 9, 9, 23, 59, 59, 9999)))
     assert len(events) == 1
-    assert events[0].summary == 'Dennis MacAlistair Ritchie\'s 0th birthday'
+    assert 'SUMMARY:Dennis MacAlistair Ritchie\'s birthday' in events[0][0]
 
 
 def test_birthday_does_not_parse():
