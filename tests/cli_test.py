@@ -787,6 +787,15 @@ def test_new(runner):
     assert result.output.startswith(str(runner.tmpdir))
 
 
+def test_debug(runner):
+    runner = runner()
+    result = runner.invoke(main_khal, '-v debug printformats'.split())
+    assert not result.exception
+    assert result.output.startswith('debug: khal 0.')
+    assert 'using the config file at' in result.output
+    assert 'debug: Using config:\ndebug: [calendars]' in result.output
+
+
 @freeze_time('2015-6-1 8:00')
 def test_new_interactive(runner):
     runner = runner(print_new='path')

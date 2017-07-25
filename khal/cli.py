@@ -40,8 +40,8 @@ except ImportError:
     def setproctitle(x):
         pass
 
-
-logger = logging.getLogger(__name__)
+logger = logging.getLogger('khal')
+click_log.pre_record(logger)
 
 days_option = click.option('--days', default=None, type=int, help='How many days to include.')
 week_option = click.option('--week', '-w', help='Include all events in one week.', is_flag=True)

@@ -46,7 +46,7 @@ from .event import Event, EventStandIn
 from .exceptions import (CouldNotCreateDbDir, OutdatedDbVersionError,
                          UpdateFailed)
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger('khal')
 
 DB_VERSION = 5  # The current db layout version
 
